@@ -1,0 +1,19 @@
+name = "SignedPerms"
+uuid = "87930f55-5467-4ad4-bf41-f0163ea2f44f"
+authors = ["Jean Michel <jean.michel@imj-prg.fr>"]
+version = "0.1.0"
+
+[deps]
+Combinat = "a6b051d1-fc4b-4ede-b53e-347fa9fb9a74"
+PermGroups = "0b63354f-98d5-4b2f-8b91-7408084ca26b"
+
+[compat]
+Combinat = "0.0.5, 0.0.6, 0.1"
+PermGroups = "0.2, 0.3"
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
