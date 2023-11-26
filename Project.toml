@@ -1,7 +1,7 @@
 name = "SignedPerms"
 uuid = "87930f55-5467-4ad4-bf41-f0163ea2f44f"
 authors = ["Jean Michel <jean.michel@imj-prg.fr>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Combinat = "a6b051d1-fc4b-4ede-b53e-347fa9fb9a74"

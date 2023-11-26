@@ -6,14 +6,16 @@ SPerm(::Integer...)
 SignedPerms.@sperm_str(::String)
 Perms.Perm(::SPerm)
 signs
-Perms.permute(::AbstractVector,::SPerm)
+Perms.invpermute(::AbstractVector,::SPerm)
 Perms.orbit(::SPerm,::Integer)
 Perms.order(::SPerm)
+Perms.last_moved(::SPerm)
 Perms.cycles(::SPerm)
 Perms.cycletype(::SPerm)
 Matrix(::SPerm)
 SPerm(::AbstractMatrix{<:Integer})
 SPerm(::AbstractVector,::AbstractVector)
+Perms.onmats(::AbstractMatrix,::SPerm)
 sstab_onmats
 SPerm(::AbstractMatrix,::AbstractMatrix)
 hyperoctaedral_group

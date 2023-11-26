@@ -30,25 +30,24 @@ the example below with `SPerm(m,n;dims=(1,2))`.
 
 The  type  of  signed  permutations  is  `SPerm{T}`  where  `T<:Integer`, a
 `struct`  with one  field, a  `Vector{T}` which  holds the  image of `1:n`.
-Using a `T` siferrent than `Int` may possibly save space or time. If `T` is
-not  specified we  take it  to be  `Int16` since  this is a good compromise
+Using a `T` different than `Int` may possibly save space or time. If `T` is
+not  specified we  take it  to be  `$Idef` since  this is a good compromise
 between speed and compactness.
 
-SPerms  have methods `copy, hash, ==, isless`  (total order) so they can be
-keys in hashes or elements of sets; two `SPerms` are equal if they move the
+`SPerm`s  have methods `copy, hash, ==, isless`  (total order) so they can be
+keys in hashes or elements of sets; two `SPerm`s are equal if they move the
 same points to the same images. For instance,
 ```julia-repl
 julia> SPerm([-2,-1,-3])==SPerm([-2,-1,-3,4])
 true
 ```
-SPerms are considered as scalars for broadcasting.
+`SPerm`s are considered as scalars for broadcasting.
 """
 module SignedPerms
 using PermGroups
 using Combinat: tally, collectby
 export SPerm, sstab_onmats, @sperm_str, signs, SPermGroup, hyperoctaedral_group
 
-hasdecor(io::IO)=get(io,:TeX,false)||get(io,:limit,false)
 const info=Ref(true)
 function InfoChevie(a...)
   if info[] print(a...) end
@@ -60,18 +59,20 @@ end
 An  `SPerm` represents a signed permutation of `1:n`, that is a permutation
 of  the  set  `-n,…,-1,1,…,n`  which  preserves  the  pairs `(-i,i)`. It is
 implemented  by a `struct SPerm` which has  one field `d`, a vector holding
-the images of `1:n`.
+the images of `1:n`. It is printed as its cycle decomposition.
 """
 struct SPerm{T<:Integer}
    d::Vector{T}
 end
 
+const Idef=Int16 # default type T for SPerm{T}
+
 """
 SPerm{T}(x::Integer...)where T<:Integer
 
-returns   a   signed   cycle.   For  instance  `SPerm{Int8}(1,-2,-1,2)`  and
-`SPerm({Int8}[-2,1])`  define  the  same  signed  permutation. If not given
-`{T}` is taken to be `{Int16}`.
+returns as a `SPerm{T}` a signed cycle. For instance
+`SPerm{Int8}(1,-2,-1,2)`  and `SPerm({Int8}[-2,1])` define  the same signed
+permutation. If not given `{T}` is taken to be `{$Idef}`.
 """
 function SPerm{T}(x::Integer...)where T<:Integer
   if isempty(x) return SPerm(T[]) end
@@ -84,8 +85,6 @@ function SPerm{T}(x::Integer...)where T<:Integer
   end
   SPerm(d)
 end
-
-const Idef=Int16 # you can change the default type T for SPerm here
 
 SPerm(x::Integer...)=SPerm{Idef}(x...)
 
@@ -132,11 +131,11 @@ Base.one(p::SPerm{T}) where T=SPerm(collect(T(1):T(length(p.d))))
 Base.one(::Type{SPerm{T}}) where T=SPerm(T[])
 Base.copy(p::SPerm)=SPerm(copy(p.d))
 
-Base.vec(a::SPerm)=a.d
+Perms.perm(a::SPerm)=a.d
 
 "`Perm(p::SPerm)` returns the underlying `Perm` of an `SPerm`"
 Perms.Perm(p::SPerm)=Perm(abs.(p.d))
-SPerm(p::Perm)=SPerm(vec(p))
+SPerm(p::Perm)=SPerm(perm(p))
 "`signs(p::SPerm)` returns the underlying signs of an `SPerm`"
 signs(p::SPerm)=sign.(p.d)
 # if N=onmats(M,p) then M==onmats(N^Diagonal(signs(p)),Perm(p))
@@ -181,18 +180,22 @@ function Base.:(==)(a::SPerm, b::SPerm)
   a.d==b.d
 end
 
+" `last_moved(a::SPerm)` is the largest integer moved by a"
+function Perms.last_moved(a::SPerm{T})where T
+  @inbounds p=findlast(x->a.d[x]!=x,eachindex(a.d))
+  isnothing(p) ? T(0) : T(p)
+end
+
 """
-`orbit(a::SPerm,i::Integer)` returns the orbit of `a` on `i`.
+`orbit(p::SPerm,i::Integer)` returns the orbit of `p` on `i`.
 """
-function Perms.orbit(a::SPerm{T},i::Integer)where T
-  if abs(i)>length(a.d) return T[i] end
-  res=T[]
-  sizehint!(res,length(a.d))
+function Perms.orbit(p::SPerm,i::Integer)
+  res=[i]
   j=i
   while true
-    push!(res,j)
-@inbounds j=sign(j)*a.d[abs(j)]
+    j^=p
     if j==i return res end
+    push!(res,j)
   end
 end
 
@@ -202,26 +205,26 @@ end
 Two cycles which differ only by sign are returned once only.
 ```julia-repl
 julia> cycles(SPerm(-1,2)*SPerm(3,-3)*SPerm(4,5,-4,-5))
-3-element Vector{Vector{Int16}}:
+3-element Vector{Vector{$Idef}}:
  [1, -2]
  [3, -3]
  [4, 5, -4, -5]
 ```
 """
-function Perms.cycles(p::SPerm)
-  cycles=Vector{eltype(p.d)}[]
+function Perms.cycles(p::SPerm{T})where T
+  orbs=Vector{T}[]
   to_visit=trues(length(p.d))
   for i in eachindex(to_visit)
     if !to_visit[i] continue end
-    cyc=orbit(p,i)
+    cyc=orbit(p,T(i))
 @inbounds to_visit[abs.(cyc)].=false
-    if length(cyc)>1 push!(cycles,cyc) end
+    if length(cyc)>1 push!(orbs,cyc) end
   end
-  cycles
+  orbs
 end
 
 """
-`cycletype(p::SPerm,n=length(p.d))`
+`cycletype(p::SPerm,n=last_moved(p))`
 pair  of  partitions  parameterizing  the  conjugacy  class  of  `p` in the
 hyperoctaedral group `Bₙ`
 ```julia-repl
@@ -231,21 +234,16 @@ julia> cycletype(SPerm(1,-1),2)
  [1]
 ```
 """
-function Perms.cycletype(p::SPerm,n=length(p.d))
+function Perms.cycletype(p::SPerm,n=last_moved(p))
   res=[Int[],Int[]]
-  mark=trues(n)
+  to_visit=trues(n)
   for i in 1:n
-    if mark[i]
-      cyc=orbit(p, i)
-      if -i in cyc push!(res[2], div(length(cyc),2))
-      else push!(res[1], length(cyc))
-      end
-      for j in cyc
-        if j<0 mark[-j]=false
-        else mark[j]=false
-        end
-      end
+    if !to_visit[i] continue end
+    cyc=orbit(p, i)
+    if -i in cyc push!(res[2], div(length(cyc),2))
+    else push!(res[1], length(cyc))
     end
+@inbounds to_visit[abs.(cyc)].=false
   end
   sort!.(res,rev=true)
 end
@@ -256,12 +254,13 @@ end
 PermGroups.order(a::SPerm) = lcm(length.(cycles(a)))
 
 function Base.show(io::IO, a::SPerm)
-  if !hasdecor(io) print(io,"sperm\"") end
+  hasdecor=get(io,:TeX,false)||get(io,:limit,false)
+  if !hasdecor print(io,"sperm\"") end
   cyc=cycles(a)
   if isempty(cyc) print(io,"()")
   else for c in cyc print(io,"(",join(c,","),")") end
   end
-  if !hasdecor(io) print(io,"\"") end
+  if !hasdecor print(io,"\"") end
 end
 
 function Base.show(io::IO, ::MIME"text/plain", p::SPerm{T})where T
@@ -300,39 +299,41 @@ Base.:/(a::SPerm,b::SPerm)=a*inv(b)
 Base.:^(a::SPerm, b::SPerm)=inv(b)*a*b
 Base.:^(a::SPerm, b::Perm)=a^SPerm(b)
 
-@inline function Base.:^(n::Integer, a::SPerm{T}) where T
-  if abs(n)>length(a.d) return T(n) end
-@inbounds n<0 ? -a.d[-n] : a.d[n]
+@inline function Base.:^(n::T, a::SPerm) where T<:Integer
+  if abs(n)>length(a.d) return n end
+@inbounds n<0 ? T(-a.d[-n]) : T(a.d[n])
 end
 
 Base.:^(a::SPerm, n::Integer)=n>=0 ? Base.power_by_squaring(a,n) :
                                      Base.power_by_squaring(inv(a),-n)
 
 """
-`permute(l::AbstractVector,p::SPerm)`
+`invpermute(l::AbstractVector,p::SPerm)`
 
-returns `l` permuted by `p`, a vector `r` such that `r[abs(i^p)]=l[i]*sign(i^p)`.
+returns `l` invpermuted by `p`, a vector `r` such that
+`r[abs(i^p)]=l[i]*sign(i^p)`.
 
 ```julia-repl
 julia> p=SPerm([-2,-1,-3])
 SPerm{Int64}: (1,-2)(3,-3)
 
-julia> permute([20,30,40],p)
+julia> invpermute([20,30,40],p)
 3-element Vector{Int64}:
  -30
  -20
  -40
 ```
 
-`permute`  can also act on  matrices with a keyword  `dims`. If `dims=1` it
-permutes  the lines, if `dims=2` the  columns and for `dims=(1,2)` both. If
-`P=Matrix(p)`  and  `iP=Matrix(inv(p))`  then  `permute(m,p;dims=1)==iP*m`,
-`permute(m,p;dims=2)==m*P`  and `permute(m,p;dims=(1,2))==iP*m*P`. Finally,
-the  form  `permute(m,p1,p2)`  permutes  the  lines  of `m` by `p1` and the
-columns by `p2`.
+`invpermute` can also act on matrices with a keyword `dims`. If `dims=1` it
+invpermutes  the lines, if `dims=2` the  columns and for `dims=(1,2)` both.
+If `P=Matrix(p)` and `iP=Matrix(inv(p))` then
+`invpermute(m,p;dims=1)==iP*m`,      `invpermute(m,p;dims=2)==m*P`      and
+`invpermute(m,p;dims=(1,2))==iP*m*P`. Finally, the form
+`invpermute(m,p1,p2)`  invpermutes the lines of `m` by `p1` and the columns
+by `p2`.
 """
-function Perms.permute(l::AbstractVector,a::SPerm)
-  res=copy(l)
+function Perms.invpermute(l::AbstractVector,a::SPerm)
+  res=collect(l)
   for i in eachindex(l)
     v=i^a
     if v>0 res[v]=l[i] else res[-v]=-l[i] end
@@ -340,8 +341,14 @@ function Perms.permute(l::AbstractVector,a::SPerm)
   res
 end
 
-function Perms.permute(m::AbstractMatrix,a::SPerm,b::SPerm)
-  res=copy(m)
+"""
+`onmats(m::AbstractMatrix,g::SPerm)` synonym for `invpermute(m,g;dims=(1,2))`
+or `invpermute(m,g,g)`.
+"""
+Perms.onmats(m::AbstractMatrix,g::SPerm)=invpermute(m,g,g)
+
+function Perms.invpermute(m::AbstractMatrix,a::SPerm,b::SPerm)
+  res=collect(m)
   for i in CartesianIndices(m)
     v1=getindex(i,1)^a
     v2=getindex(i,2)^b
@@ -350,10 +357,10 @@ function Perms.permute(m::AbstractMatrix,a::SPerm,b::SPerm)
   res
 end
 
-function Perms.permute(m::AbstractMatrix,a::SPerm;dims=1)
-  if dims==1 permute(m,a,SPerm())
-  elseif dims==2 permute(m,SPerm(),a)
-  elseif dims==(1,2) permute(m,a,a)
+function Perms.invpermute(m::AbstractMatrix,a::SPerm;dims=1)
+  if dims==1 invpermute(m,a,SPerm())
+  elseif dims==2 invpermute(m,SPerm(),a)
+  elseif dims==(1,2) invpermute(m,a,a)
   end
 end
 
@@ -363,39 +370,39 @@ pair(x)=x<-x ? (x,-x) : (-x,x)
 """
 `SPerm{T}(l::AbstractVector,l1::AbstractVector)`
 
-return  a `SPerm{T}` `p`  such that `permute(l,p)==l1`  if such `p` exists;
-returns  nothing otherwise.  If not  given `{T}`  is taken to be `{Int16}`.
+return  a `SPerm{T}` `p`  such that `invpermute(l1,p)==l`  if such `p` exists;
+returns  nothing otherwise.  If not  given `{T}`  is taken to be `{$Idef}`.
 Needs the entries of `l` and `l1` to be sortable.
 
 ```julia-repl
 julia> p=SPerm([20,30,40],[-40,-20,-30])
-(1,-2,3,-1,2,-3)
+(1,-3,2,-1,3,-2)
 
-julia> permute([20,30,40],p)
+julia> invpermute([-40,-20,-30],p)
 3-element Vector{Int64}:
- -40
- -20
- -30
+ 20
+ 30
+ 40
 ```
 """
 function SPerm{T}(a::AbstractVector,b::AbstractVector)where T<:Integer
   p=Perm(pair.(a),pair.(b))
   if isnothing(p) return p end
-  res=permute(eachindex(a),p)
+  res=invpermute(eachindex(a),p)
   for i in eachindex(a)
-    if b[i^(p^-1)]!=a[i] res[i]=-res[i] end
+   if b[i^inv(p)]!=a[i] res[i]=-res[i] end
   end
-  SPerm{T}(res)
+  inv(SPerm{T}(res))
 end
 
 SPerm(l::AbstractVector,l1::AbstractVector)=SPerm{Idef}(l,l1)
 
 """
-`Matrix(a::SPerm,n=length(a.d))`  permutation matrix for  `a` (operating on
-`n` points)
+`Matrix(p::SPerm,n=last_moved(p))`  permutation matrix for `p` operating on
+`n` points.
 
-if `m=Matrix(a)` then `permutedims(v)*m==permute(v,a)`.
-Also `Diagonal(signs(a))*Matrix(Perm(a))==Matrix(a)`.
+For a vector `v`, we have `permutedims(v)*Matrix(p)==invpermute(v,p)`.
+Also `Diagonal(signs(p))*Matrix(Perm(p))==Matrix(p)`.
 ```julia-repl
 julia> Matrix(SPerm([-2,-1,-3]))
 3×3 Matrix{Int64}:
@@ -404,10 +411,9 @@ julia> Matrix(SPerm([-2,-1,-3]))
   0   0  -1
 ```
 """
-function Base.Matrix(a::SPerm,n=length(a.d))
+function Base.Matrix(a::SPerm,n=last_moved(a))
   res=zeros(Int,n,n)
-  for (i,v) in pairs(a.d) res[i,abs(v)]=sign(v) end
-  for i in length(a.d)+1:n res[i,i]=1 end
+  for i in 1:n res[i,abs(i^a)]=sign(i^a) end
   res
 end
 
@@ -434,9 +440,8 @@ function SPerm{T}(m::AbstractMatrix{<:Integer}) where T<:Integer
   if n!=size(m,2) error("matrix should be square") end
   res=fill(T(0),n)
   for i in 1:n
-    nz=findall(!iszero,m[i,:])
-    if length(nz)!=1 error("not a signed permutation matrix") end
-    nz=only(nz)
+    if count(!iszero,@view m[i,:])!=1 error("not a monomial matrix") end
+    nz=findfirst(!iszero,@view m[i,:])
     if m[i,nz]==1 res[i]=nz
     elseif m[i,nz]==-1 res[i]=-nz
     else error("not a signed permutation matrix")
@@ -445,9 +450,9 @@ function SPerm{T}(m::AbstractMatrix{<:Integer}) where T<:Integer
   SPerm{T}(res)
 end
 
-# Transforms perm+signs to a signed perm,
-# SPerm(p,s)=SPerm(p.d.*s)
-# We have the property p=SPerm(Perm(p),signs(p))
+# We have the property p=SPerm(Perm(p).d.*signs(p))
+
+randSPerm(n)=SPerm(Idef.(rand((-1,1),n).*sortperm(rand(1:n,n))))
 
 " `hyperoctaedral_group(n)` the hyperoctaedral group on `1:n`"
 hyperoctaedral_group(n::Int)=
@@ -492,9 +497,7 @@ end
 """
 `sstab_onmats([G,]M[,l])`
 
-If  `onmats(M,p)=permute(M,p,p)` (simultaneous  signed conjugation  of rows
-and  columns, or conjugating by the  matrix of the signed permutation `p`),
-and  the argument `G`  is given (which  should be an  `SPermGroup`) this is
+if  the argument `G`  is given (which  should be an  `SPermGroup`) this is
 just  a fast implementation of `centralizer(G,M,onmats)`. If `G` is omitted
 it  is  taken  to  be  `hyperoctaedral_group(size(M,1))`.  The program uses
 sophisticated  algorithms, and can  handle matrices up  to 80×80. If `l` is
@@ -503,10 +506,7 @@ given the return group should also centralize `l` (for the action ^)
 ```julia-repl
 julia> n=[-1 -1 -1 -2 2 -2 -3 -3 -3; -1 -1 -1 -3 3 -3 -2 -2 -2; -1 -1 -1 -1 1 -1 -1 -1 -1; -2 -3 -1 -3 1 -2 -1 -3 -2; 2 3 1 1 -2 3 3 2 1; -2 -3 -1 -2 3 -1 -2 -1 -3; -3 -2 -1 -1 3 -2 -2 -3 -1; -3 -2 -1 -3 2 -1 -3 -1 -2; -3 -2 -1 -2 1 -3 -1 -2 -3];
 
-julia> g=sstab_onmats(n)
-Group([(1,6)(2,8)(5,-7),(1,8)(2,6)(4,9),(1,2)(4,9)(5,-7)(6,8),(1,-6)(2,-8)(3,-3)(4,-4)(5,7)(9,-9),(1,-8)(2,-6)(3,-3)(4,-9)(5,-5)(7,-7),(1,-2)(3,-3)(4,-9)(5,7)(6,-8)])
-
-julia> length(g)
+julia> length(sstab_onmats(n))
 8
 ```
 """
@@ -535,9 +535,9 @@ end
 `SPerm_onmats(M,N;extra=nothing)`
 
 `M`  and `N` should be symmetric  matrices. `SPerm_onmats` returns a signed
-permutation `p` such that `onmats(M,p)=N` if such a permutation exists, and
+permutation `p` such that `onmats(N,p)=M` if such a permutation exists, and
 `nothing`  otherwise. If  in addition  vectors `extra=[m,n]` are given, the
-signed permutation `p` should also satisfy `permute(m,p)==n`.
+signed permutation `p` should also satisfy `invpermute(n,p)==m`.
 
 Efficient version of
 `transporting_elt(hyperoctaedral_group(size(M,1)),M,N,onmats)`
@@ -599,15 +599,15 @@ function SPerm_onmats(M,N;extra=nothing)
   end
   # transporter of a ps from [1..Length(I)] to I
   trans=I->SPerm(mappingPerm(eachindex(I),I).d)
-  trans(I)^-1*tr*trans(J)
+  trans(J)^-1*inv(tr)*trans(I)
 end
 
 """
 `SPerm(M::AbstractMatrix,N::AbstractMatrix;dims)`
 
-returns a signed permutation `p` such that `permute(M,p;dims)==N` is such a
-`p`  exists,  and  `nothing`  otherwise.  If  `dims=(1,2)` then `M` and `N`
-should be symmetric matrices.
+returns  a signed  permutation `p`  such that  `invpermute(N,p;dims)==M` if
+such  a `p` exists,  and `nothing` otherwise.  If `dims=(1,2)` then `M` and
+`N` should be symmetric matrices.
 
 The  case `dims=(1,2)` routine is useful  to identify two objects which are
 isomorphic  but with different labelings. It  is used in Chevie to identify
@@ -618,12 +618,9 @@ program  uses sophisticated algorithms, and can often handle matrices up to
 ```julia-repl
 julia> p=sperm"(1,-1)(2,5,3,-4,-2,-5,-3,4)(7,-9)";
 
-julia> m=permute(n,p,p);
+julia> m=onmats(n,p);
 
-julia> p=SPerm(m,n;dims=(1,2))
-(1,8,-1,-8)(2,-9,-7,-4,-3,5,-6)
-
-julia> permute(m,p;dims=(1,2))==n
+julia> onmats(n,SPerm(m,n;dims=(1,2)))==m
 true
 ```
 """
