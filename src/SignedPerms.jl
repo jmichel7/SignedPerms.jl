@@ -364,15 +364,15 @@ function Perms.invpermute(m::AbstractMatrix,a::SPerm;dims=1)
   end
 end
 
-# to find orbits under SPerms transform objects to pairs
-pair(x)=x<-x ? (x,-x) : (-x,x)
+# to find orbits under SPerms take abs
+myabs(x)=x<-x ? -x : x
 
 """
 `SPerm{T}(l::AbstractVector,l1::AbstractVector)`
 
 return  a `SPerm{T}` `p`  such that `invpermute(l1,p)==l`  if such `p` exists;
 returns  nothing otherwise.  If not  given `{T}`  is taken to be `{$Idef}`.
-Needs the entries of `l` and `l1` to be sortable.
+Needs the entries of `l` and `l1` to be sortable and have operation `-`.
 
 ```julia-repl
 julia> p=SPerm([20,30,40],[-40,-20,-30])
@@ -386,13 +386,13 @@ julia> invpermute([-40,-20,-30],p)
 ```
 """
 function SPerm{T}(a::AbstractVector,b::AbstractVector)where T<:Integer
-  p=Perm(pair.(a),pair.(b))
+  p=Perm(myabs.(a),myabs.(b))
   if isnothing(p) return p end
-  res=invpermute(eachindex(a),p)
+  res=perm(p)
   for i in eachindex(a)
-   if b[i^inv(p)]!=a[i] res[i]=-res[i] end
+@inbounds if b[i]!=a[i^p] res[i]=-res[i] end
   end
-  inv(SPerm{T}(res))
+  SPerm{T}(res)
 end
 
 SPerm(l::AbstractVector,l1::AbstractVector)=SPerm{Idef}(l,l1)
@@ -473,7 +473,7 @@ dedup(M::AbstractMatrix)=M[1:2:size(M,1),1:2:size(M,2)]
 
 # transform SPerm on -n:n to hyperoctaedral Perm acting on  1:2n
 dup(p::SPerm)=isone(p) ? Perm() :
-    Perm{Idef}(vcat(map(i->i>0 ? [2i-1,2i] : [-2i,-2i-1],p.d)...))
+  Perm(Idef.(vcat(map(i->i>0 ? [2i-1,2i] : [-2i,-2i-1],p.d)...)))
 
 # transform hyperoctaedral Perm acting on  1:2n to SPerm on -n:n 
 dedup(p::Perm)=SPerm{Idef}(map(i->iseven(i) ? -div(i,2) : div(i+1,2),
@@ -489,7 +489,7 @@ function invblocks(m,extra=nothing)
   while true
     blk=blk1
     blk1=vcat(map(I->collectby(map(i->
-            (tally(pair.(m[i,I])),m[i,i],extra[i]),I),I), blk)...)
+            (tally(myabs.(m[i,I])),m[i,i],extra[i]),I),I), blk)...)
     if blk==blk1 return blk end
   end
 end
@@ -549,8 +549,8 @@ function SPerm_onmats(M,N;extra=nothing)
   if isnothing(extra) extra=[fill(1,size(M,1)),fill(1,size(M,1))] end
   function ind(I,J)
     local iM,iN,p,n
-    invM=map(i->(tally(pair.(M[i,I])),M[i,i],extra[1][i]),I)
-    invN=map(i->(tally(pair.(N[i,J])),N[i,i],extra[2][i]),J)
+    invM=map(i->(tally(myabs.(M[i,I])),M[i,i],extra[1][i]),I)
+    invN=map(i->(tally(myabs.(N[i,J])),N[i,i],extra[2][i]),J)
     if tally(invM)!=tally(invN) InfoChevie("content differs");return end
     iM=collectby(invM,I)
     iN=collectby(invN,J)
