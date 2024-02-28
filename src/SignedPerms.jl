@@ -472,12 +472,18 @@ end
 dedup(M::AbstractMatrix)=M[1:2:size(M,1),1:2:size(M,2)]
 
 # transform SPerm on -n:n to hyperoctaedral Perm acting on  1:2n
-dup(p::SPerm)=isone(p) ? Perm() :
-  Perm(Idef.(vcat(map(i->i>0 ? [2i-1,2i] : [-2i,-2i-1],p.d)...)))
+function dup(p::SPerm)
+  res=empty(p.d)
+  for i in p.d
+    if i>0 push!(res,2i-1);push!(res,2i)
+    else   push!(res,-2i);push!(res,-2i-1)
+    end
+  end
+  Perm(res)
+end
 
 # transform hyperoctaedral Perm acting on  1:2n to SPerm on -n:n 
-dedup(p::Perm)=SPerm{Idef}(map(i->iseven(i) ? -div(i,2) : div(i+1,2),
-                         p.d[1:2:length(p.d)-1]))
+dedup(p::Perm{T}) where T=SPerm{T}(map(i->iseven(i) ? -div(i,2) : div(i+1,2),p.d[1:2:end-1]))
 
 dup(g::SPermGroup)=Group(dup.(gens(g)))
 
