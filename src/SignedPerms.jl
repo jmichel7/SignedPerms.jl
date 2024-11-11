@@ -417,7 +417,7 @@ function Base.Matrix(a::SPerm,n=last_moved(a))
   res
 end
 
-SPerm(m::AbstractMatrix{<:Integer})=SPerm{Idef}(m)
+SPerm(m::AbstractMatrix)=SPerm{Idef}(m)
 
 """
 `SPerm{T}(m::AbstractMatrix)`  If  `m`  is  a  signed  permutation  matrix,
@@ -435,7 +435,7 @@ julia> SPerm(m)
 (1,-2)(3,-3)
 ```
 """
-function SPerm{T}(m::AbstractMatrix{<:Integer}) where T<:Integer
+function SPerm{T}(m::AbstractMatrix) where T<:Integer
   n=size(m,1)
   if n!=size(m,2) error("matrix should be square") end
   res=fill(T(0),n)
