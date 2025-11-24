@@ -28,8 +28,8 @@ A  motivation for my use of signed  permutations is to find if two matrices
 differ  only by a simultaneous signed permutation of lines and columns. See
 the example below with `SPerm(m,n;dims=(1,2))`.
 
-The  type  of  signed  permutations  is  `SPerm{T}`  where  `T<:Integer`, a
-`struct`  with one  field, a  `Vector{T}` which  holds the  image of `1:n`.
+The type of signed permutations is [`SPerm`](@ref)`{T}` where `T<:Integer`,
+a  `struct` with one field,  a `Vector{T}` which holds  the image of `1:n`.
 Using a `T` different than `Int` may possibly save space or time. If `T` is
 not  specified we  take it  to be  `$Idef` since  this is a good compromise
 between speed and compactness.
@@ -42,6 +42,22 @@ julia> SPerm([-2,-1,-3])==SPerm([-2,-1,-3,4])
 true
 ```
 `SPerm`s are considered as scalars for broadcasting.
+
+For more information, look at
+
+[`SPerm`](@ref),
+[`signs`](@ref),
+[`invpermute`](@ref),
+[`orbit`](@ref),
+[`order`](@ref),
+[`last_moved`](@ref),
+[`cycles`](@ref),
+[`cycletype`](@ref),
+[`Matrix`](@ref),
+[`onmats`](@ref),
+[`sstab_onmats`](@ref),
+[`hyperoctaedral_group`](@ref),
+[`SPerm_onmats`](@ref).
 """
 module SignedPerms
 using PermGroups
@@ -454,7 +470,18 @@ end
 
 randSPerm(n)=SPerm(Idef.(rand((-1,1),n).*sortperm(rand(1:n,n))))
 
-" `hyperoctaedral_group(n)` the hyperoctaedral group on `1:n`"
+"""
+`hyperoctaedral_group(n)` 
+
+the hyperoctaedral group on `1:n`
+```julia-repl
+julia> W=hyperoctaedral_group(2)
+Group([(1,-1),(1,2)])
+
+julia> W(1,2)
+SPerm{Int8}: (1,-2,-1,2)
+```
+"""
 hyperoctaedral_group(n::Int)=
   Group(pushfirst!(map(i->SPerm{Int8}(i-1,i),2:n),SPerm{Int8}(1,-1)))
 
@@ -510,9 +537,22 @@ sophisticated  algorithms, and can  handle matrices up  to 80×80. If `l` is
 given the return group should also centralize `l` (for the action ^)
 
 ```julia-repl
-julia> n=[-1 -1 -1 -2 2 -2 -3 -3 -3; -1 -1 -1 -3 3 -3 -2 -2 -2; -1 -1 -1 -1 1 -1 -1 -1 -1; -2 -3 -1 -3 1 -2 -1 -3 -2; 2 3 1 1 -2 3 3 2 1; -2 -3 -1 -2 3 -1 -2 -1 -3; -3 -2 -1 -1 3 -2 -2 -3 -1; -3 -2 -1 -3 2 -1 -3 -1 -2; -3 -2 -1 -2 1 -3 -1 -2 -3];
+julia> n=[-1 -1 -1 -2 2 -2 -3 -3 -3; -1 -1 -1 -3 3 -3 -2 -2 -2; -1 -1 -1 -1 1 -1 -1 -1 -1; -2 -3 -1 -3 1 -2 -1 -3 -2; 2 3 1 1 -2 3 3 2 1; -2 -3 -1 -2 3 -1 -2 -1 -3; -3 -2 -1 -1 3 -2 -2 -3 -1; -3 -2 -1 -3 2 -1 -3 -1 -2; -3 -2 -1 -2 1 -3 -1 -2 -3]
+9×9 Matrix{Int64}:
+ -1  -1  -1  -2   2  -2  -3  -3  -3
+ -1  -1  -1  -3   3  -3  -2  -2  -2
+ -1  -1  -1  -1   1  -1  -1  -1  -1
+ -2  -3  -1  -3   1  -2  -1  -3  -2
+  2   3   1   1  -2   3   3   2   1
+ -2  -3  -1  -2   3  -1  -2  -1  -3
+ -3  -2  -1  -1   3  -2  -2  -3  -1
+ -3  -2  -1  -3   2  -1  -3  -1  -2
+ -3  -2  -1  -2   1  -3  -1  -2  -3
 
-julia> length(sstab_onmats(n))
+julia> G=sstab_onmats(n)
+Group([(1,8)(2,6)(4,9),(1,6)(2,8)(5,-7),(1,-2)(3,-3)(4,-9)(5,7)(6,-8),(1,-6)(2,-8)(3,-3)(4,-4)(5,7)(9,-9),(1,2)(4,9)(5,-7)(6,8),(1,-8)(2,-6)(3,-3)(4,-9)(5,-5)(7,-7)])
+
+julia> length(G)
 8
 ```
 """

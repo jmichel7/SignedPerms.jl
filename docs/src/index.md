@@ -1,4 +1,10 @@
+```@meta
+CurrentModule = SignedPerms
+```
 # Signed permutations
+
+Documentation for [SignedPerms](https://github.com/jmichel7/SignedPerms.jl).
+
 ```@docs
 SignedPerms
 SPerm
