@@ -9,7 +9,7 @@ julia> SPerm([-2,-1,-3])
 SPerm{Int64}: (1,-2)(3,-3)
 ```
 The group of signed permutations of `1:n` is called the hyperoctaedral group.
-```
+```julia-rep1
 julia> W=hyperoctaedral_group(2)
 Group([(1,-1),(1,2)])
 

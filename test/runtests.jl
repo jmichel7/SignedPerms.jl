@@ -14,6 +14,8 @@ function mytest(file::String,cmd::String,man::String)
 end
 @testset "SignedPerms.jl" begin
 @test mytest("SignedPerms.jl","SPerm([-2,-1,-3])","SPerm{Int64}: (1,-2)(3,-3)")
+@test mytest("SignedPerms.jl","W=hyperoctaedral_group(2)","Group([(1,-1),(1,2)])")
+@test mytest("SignedPerms.jl","elements(W)","8-element Vector{SPerm{Int8}}:\n ()\n (1,-1)\n (1,2)\n (1,-2,-1,2)\n (1,2,-1,-2)\n (1,-2)\n (2,-2)\n (1,-1)(2,-2)")
 @test mytest("SignedPerms.jl","SPerm([-2,-1,-3])==SPerm([-2,-1,-3,4])","true")
 @test mytest("SignedPerms.jl","cycles(SPerm(-1,2)*SPerm(3,-3)*SPerm(4,5,-4,-5))","3-element Vector{Vector{Int16}}:\n [1, -2]\n [3, -3]\n [4, 5, -4, -5]")
 @test mytest("SignedPerms.jl","cycletype(SPerm(1,-1),2)","2-element Vector{Vector{Int64}}:\n [1]\n [1]")
