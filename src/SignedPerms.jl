@@ -61,7 +61,7 @@ For more information, look at
 """
 module SignedPerms
 using PermGroups
-using Combinat: tally, collectby
+using Combinat: collectby, tally
 export SPerm, sstab_onmats, @sperm_str, signs, SPermGroup, hyperoctaedral_group
 
 const info=Ref(true)
@@ -92,7 +92,7 @@ permutation. If not given `{T}` is taken to be `{$Idef}`.
 """
 function SPerm{T}(x::Integer...)where T<:Integer
   if isempty(x) return SPerm(T[]) end
-  d=T.(1:max(abs.(x)...))
+  d=T.(1:maximum(abs.(x)))
   for i in 1:length(x)-1
    d[abs(x[i])]=sign(x[i])*x[i+1]
   end
@@ -167,9 +167,8 @@ function Base.hash(a::SPerm, h::UInt)
   h
 end
 
-function Base.promote_rule(a::Type{SPerm{T1}},b::Type{SPerm{T2}})where {T1,T2}
+Base.promote_rule(::Type{SPerm{T1}},::Type{SPerm{T2}})where {T1,T2}=
   SPerm{promote_type(T1,T2)}
-end
 
 extend!(a::SPerm,n::Integer)=if length(a.d)<n append!(a.d,length(a.d)+1:n) end
 
@@ -468,7 +467,7 @@ end
 
 # We have the property p=SPerm(Perm(p).d.*signs(p))
 
-randSPerm(n)=SPerm(Idef.(rand((-1,1),n).*sortperm(rand(1:n,n))))
+randSPerm(n::Integer)=SPerm(Idef.(rand((-1,1),n).*sortperm(rand(1:n,n))))
 
 """
 `hyperoctaedral_group(n)` 
@@ -516,8 +515,7 @@ dup(g::SPermGroup)=Group(dup.(gens(g)))
 
 Base.length(g::SPermGroup)=length(Group(dup.(gens(g))))
 
-function invblocks(m,extra=nothing)
-  if isnothing(extra) extra=zeros(Int,size(m,1)) end
+function invblocks(m,extra=zeros(Int,size(m,1)))
   blk1=[collect(axes(m,1))]
   while true
     blk=blk1
@@ -556,10 +554,8 @@ julia> length(G)
 8
 ```
 """
-function sstab_onmats(M,extra=nothing)
-  k=size(M,1)
+function sstab_onmats(M,extra=fill(1,size(M,1))) # extra unused
   if M!=permutedims(M) error("M should be symmetric") end
-  if isnothing(extra) extra=fill(1,size(M,1)) end
   blocks=sort(invblocks(M),by=length)
   gen=SPerm{Idef}[]
   I=Int[]
@@ -567,7 +563,7 @@ function sstab_onmats(M,extra=nothing)
     if length(r)>5 InfoChevie("#IS Large Block:",r,"\n") end
     gr=stab_onmats(dup(hyperoctaedral_group(length(r))),dup(M[r,r]))
     p=SPerm(mappingPerm(1:length(r),r).d)
-    append!(gen,map(x->dedup(x)^p,gens(gr)))
+    append!(gen,dedup.(gens(gr)).^p)
     append!(I,r)
     p=SPerm(mappingPerm(I,eachindex(I)).d)
     gen=gen.^p
@@ -589,12 +585,11 @@ Efficient version of
 `transporting_elt(hyperoctaedral_group(size(M,1)),M,N,onmats)`
 
 """
-function SPerm_onmats(M,N;extra=nothing)
+function SPerm_onmats(M,N;extra=[fill(1,size(M,1)),fill(1,size(M,1))])
   if M!=permutedims(M) error("M should be symmetric") end
   if N!=permutedims(N) error("N should be symmetric") end
-  if isnothing(extra) extra=[fill(1,size(M,1)),fill(1,size(M,1))] end
   function ind(I,J)
-    local iM,iN,p,n
+    local iM,iN,p
     invM=map(i->(tally(myabs.(M[i,I])),M[i,i],extra[1][i]),I)
     invN=map(i->(tally(myabs.(N[i,J])),N[i,i],extra[2][i]),J)
     if tally(invM)!=tally(invN) InfoChevie("content differs");return end
