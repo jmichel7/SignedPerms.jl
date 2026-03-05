@@ -8,9 +8,9 @@ images of `1:n`. It is printed as a product of signed cycles.
 julia> SPerm([-2,-1,-3])
 SPerm{Int64}: (1,-2)(3,-3)
 ```
-The group of signed permutations of `1:n` is called the hyperoctaedral group.
+The group of signed permutations of `1:n` is called the hyperoctahedral group.
 ```julia-rep1
-julia> W=hyperoctaedral_group(2)
+julia> W=hyperoctahedral_group(2)
 Group([(1,-1),(1,2)])
 
 julia> elements(W)
@@ -56,13 +56,13 @@ For more information, look at
 [`Matrix`](@ref),
 [`onmats`](@ref),
 [`sstab_onmats`](@ref),
-[`hyperoctaedral_group`](@ref),
+[`hyperoctahedral_group`](@ref),
 [`SPerm_onmats`](@ref).
 """
 module SignedPerms
 using PermGroups
 using Combinat: collectby, tally
-export SPerm, sstab_onmats, @sperm_str, signs, SPermGroup, hyperoctaedral_group
+export SPerm, sstab_onmats, @sperm_str, signs, SPermGroup, hyperoctahedral_group
 
 const info=Ref(true)
 function InfoChevie(a...)
@@ -241,7 +241,7 @@ end
 """
 `cycletype(p::SPerm,n=last_moved(p))`
 pair  of  partitions  parameterizing  the  conjugacy  class  of  `p` in the
-hyperoctaedral group `Bₙ`
+hyperoctahedral group `Bₙ`
 ```julia-repl
 julia> cycletype(SPerm(1,-1),2)
 2-element Vector{Vector{Int64}}:
@@ -470,18 +470,18 @@ end
 randSPerm(n::Integer)=SPerm(Idef.(rand((-1,1),n).*sortperm(rand(1:n,n))))
 
 """
-`hyperoctaedral_group(n)` 
+`hyperoctahedral_group(n)` 
 
-the hyperoctaedral group on `1:n`
+the hyperoctahedral group on `1:n`
 ```julia-repl
-julia> W=hyperoctaedral_group(2)
+julia> W=hyperoctahedral_group(2)
 Group([(1,-1),(1,2)])
 
 julia> W(1,2)
 SPerm{Int8}: (1,-2,-1,2)
 ```
 """
-hyperoctaedral_group(n::Int)=
+hyperoctahedral_group(n::Int)=
   Group(pushfirst!(map(i->SPerm{Int8}(i-1,i),2:n),SPerm{Int8}(1,-1)))
 
 #--------------------- action on matrices -----------------------------------
@@ -497,7 +497,7 @@ end
 
 dedup(M::AbstractMatrix)=M[1:2:size(M,1),1:2:size(M,2)]
 
-# transform SPerm on -n:n to hyperoctaedral Perm acting on  1:2n
+# transform SPerm on -n:n to hyperoctahedral Perm acting on  1:2n
 function dup(p::SPerm)
   res=empty(p.d)
   for i in p.d
@@ -508,7 +508,7 @@ function dup(p::SPerm)
   Perm(res)
 end
 
-# transform hyperoctaedral Perm acting on  1:2n to SPerm on -n:n 
+# transform hyperoctahedral Perm acting on  1:2n to SPerm on -n:n 
 dedup(p::Perm{T}) where T=SPerm{T}(map(i->iseven(i) ? -div(i,2) : div(i+1,2),p.d[1:2:end-1]))
 
 dup(g::SPermGroup)=Group(dup.(gens(g)))
@@ -530,7 +530,7 @@ end
 
 if  the argument `G`  is given (which  should be an  `SPermGroup`) this is
 just  a fast implementation of `centralizer(G,M,onmats)`. If `G` is omitted
-it  is  taken  to  be  `hyperoctaedral_group(size(M,1))`.  The program uses
+it  is  taken  to  be  `hyperoctahedral_group(size(M,1))`.  The program uses
 sophisticated  algorithms, and can  handle matrices up  to 80×80. If `l` is
 given the return group should also centralize `l` (for the action ^)
 
@@ -561,7 +561,7 @@ function sstab_onmats(M,extra=fill(1,size(M,1))) # extra unused
   I=Int[]
   for r in blocks
     if length(r)>5 InfoChevie("#IS Large Block:",r,"\n") end
-    gr=stab_onmats(dup(hyperoctaedral_group(length(r))),dup(M[r,r]))
+    gr=stab_onmats(dup(hyperoctahedral_group(length(r))),dup(M[r,r]))
     p=SPerm(mappingPerm(1:length(r),r).d)
     append!(gen,dedup.(gens(gr)).^p)
     append!(I,r)
@@ -582,7 +582,7 @@ permutation `p` such that `onmats(N,p)=M` if such a permutation exists, and
 signed permutation `p` should also satisfy `invpermute(n,p)==m`.
 
 Efficient version of
-`transporting_elt(hyperoctaedral_group(size(M,1)),M,N,onmats)`
+`transporting_elt(hyperoctahedral_group(size(M,1)),M,N,onmats)`
 
 """
 function SPerm_onmats(M,N;extra=[fill(1,size(M,1)),fill(1,size(M,1))])
@@ -597,9 +597,9 @@ function SPerm_onmats(M,N;extra=[fill(1,size(M,1)),fill(1,size(M,1))])
     iN=collectby(invN,J)
     if length(iM)==1
       if length(I)>6 InfoChevie("large block:",length(I),"\n")
-        p=transporting_elt(hyperoctaedral_group(length(I)),M[I,I],N[J,J],onmats,
+        p=transporting_elt(hyperoctahedral_group(length(I)),M[I,I],N[J,J],onmats,
             dist=(M,N)->count(i->M[i]!=N[i],eachindex(M)))
-      else p=transporting_elt(hyperoctaedral_group(length(I)),M[I,I],N[J,J],onmats)
+      else p=transporting_elt(hyperoctahedral_group(length(I)),M[I,I],N[J,J],onmats)
       end
       if isnothing(p) InfoChevie("could not match block\n");return end
       return [(I,J,p)]

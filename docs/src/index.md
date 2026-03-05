@@ -24,6 +24,6 @@ SPerm(::AbstractVector,::AbstractVector)
 Perms.onmats(::AbstractMatrix,::SPerm)
 sstab_onmats
 SPerm(::AbstractMatrix,::AbstractMatrix)
-hyperoctaedral_group
+hyperoctahedral_group
 SignedPerms.SPerm_onmats
 ```
