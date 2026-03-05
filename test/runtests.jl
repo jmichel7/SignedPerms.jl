@@ -14,7 +14,7 @@ function mytest(file::String,cmd::String,man::String)
 end
 @testset "SignedPerms.jl" begin
 @test mytest("SignedPerms.jl","SPerm([-2,-1,-3])","SPerm{Int64}: (1,-2)(3,-3)")
-@test mytest("SignedPerms.jl","W=hyperoctaedral_group(2)","Group([(1,-1),(1,2)])")
+@test mytest("SignedPerms.jl","W=hyperoctahedral_group(2)","Group([(1,-1),(1,2)])")
 @test mytest("SignedPerms.jl","elements(W)","8-element Vector{SPerm{Int8}}:\n ()\n (1,-1)\n (1,2)\n (1,-2,-1,2)\n (1,2,-1,-2)\n (1,-2)\n (2,-2)\n (1,-1)(2,-2)")
 @test mytest("SignedPerms.jl","SPerm([-2,-1,-3])==SPerm([-2,-1,-3,4])","true")
 @test mytest("SignedPerms.jl","cycles(SPerm(-1,2)*SPerm(3,-3)*SPerm(4,5,-4,-5))","3-element Vector{Vector{Int16}}:\n [1, -2]\n [3, -3]\n [4, 5, -4, -5]")
@@ -26,7 +26,7 @@ end
 @test mytest("SignedPerms.jl","Matrix(SPerm([-2,-1,-3]))","3×3 Matrix{Int64}:\n  0  -1   0\n -1   0   0\n  0   0  -1")
 @test mytest("SignedPerms.jl","m=[0 -1 0;-1 0 0;0 0 -1]","3×3 Matrix{Int64}:\n  0  -1   0\n -1   0   0\n  0   0  -1")
 @test mytest("SignedPerms.jl","SPerm(m)","(1,-2)(3,-3)")
-@test mytest("SignedPerms.jl","W=hyperoctaedral_group(2)","Group([(1,-1),(1,2)])")
+@test mytest("SignedPerms.jl","W=hyperoctahedral_group(2)","Group([(1,-1),(1,2)])")
 @test mytest("SignedPerms.jl","W(1,2)","SPerm{Int8}: (1,-2,-1,2)")
 @test mytest("SignedPerms.jl","n=[-1 -1 -1 -2 2 -2 -3 -3 -3; -1 -1 -1 -3 3 -3 -2 -2 -2; -1 -1 -1 -1 1 -1 -1 -1 -1; -2 -3 -1 -3 1 -2 -1 -3 -2; 2 3 1 1 -2 3 3 2 1; -2 -3 -1 -2 3 -1 -2 -1 -3; -3 -2 -1 -1 3 -2 -2 -3 -1; -3 -2 -1 -3 2 -1 -3 -1 -2; -3 -2 -1 -2 1 -3 -1 -2 -3]","9×9 Matrix{Int64}:\n -1  -1  -1  -2   2  -2  -3  -3  -3\n -1  -1  -1  -3   3  -3  -2  -2  -2\n -1  -1  -1  -1   1  -1  -1  -1  -1\n -2  -3  -1  -3   1  -2  -1  -3  -2\n  2   3   1   1  -2   3   3   2   1\n -2  -3  -1  -2   3  -1  -2  -1  -3\n -3  -2  -1  -1   3  -2  -2  -3  -1\n -3  -2  -1  -3   2  -1  -3  -1  -2\n -3  -2  -1  -2   1  -3  -1  -2  -3")
 @test mytest("SignedPerms.jl","G=sstab_onmats(n)","Group([(1,8)(2,6)(4,9),(1,6)(2,8)(5,-7),(1,-2)(3,-3)(4,-9)(5,7)(6,-8),(1,-6)(2,-8)(3,-3)(4,-4)(5,7)(9,-9),(1,2)(4,9)(5,-7)(6,8),(1,-8)(2,-6)(3,-3)(4,-9)(5,-5)(7,-7)])")
